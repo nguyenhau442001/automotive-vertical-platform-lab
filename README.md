@@ -117,13 +117,11 @@ Build the Android Automotive application:
 
 ## 🗺️ Project Roadmap & Development Phases
 
-- [x] **Phase 1: Signal Schema, Simulator, & Architecture Docs** (Completed MVP)
-  - Source of truth `schemas/vehicle_signals.json` covering 7 key signals.
-  - Python dynamic simulator engine & diagnostic tracer.
-  - Initial `DriveCore HMI` Android application structure and mock VHAL-like adapter.
-  - Comprehensive architectural and interview deep-dive documentation.
-- [ ] **Phase 2: Native C++ Signal Core**
-  - Enhanced C++ signal router, DBC bit unpacker, and SocketCAN/TCP transport.
+- [x] **Phase 1: Signal Schema, Simulator, & Architecture Docs** (Completed)
+- [x] **Phase 2: Native C++ Signal Core & Transport Streamer** (Completed)
+  - Full DBC signal database mapping for all 7 required vehicle signals.
+  - Auto-generated C++ `BlueprintSignals.h` with `SignalBinding` definitions.
+  - Native GoogleTest coverage for multi-signal unpacking, `CONTINUOUS` & `ON_CHANGE` semantics.
 - [ ] **Phase 3: AIDL/Binder Vehicle Property Service**
   - Full AIDL HAL interface integration and native Binder daemon.
 - [ ] **Phase 4: Android Automotive HMI Dashboard**

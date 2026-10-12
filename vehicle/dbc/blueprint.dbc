@@ -4,9 +4,22 @@ NS_ :
 
 BS_:
 
-BU_: ClimateECU BMS HeadUnit
+BU_: ClimateECU BMS EngineECU BodyECU HeadUnit
 
-CM_ "Signal database for the AOSP vertical blueprint. Edit here first when adding a vehicle signal.";
+CM_ "Signal database for the DriveCore HMI vertical platform lab. Single source of truth for CAN bit definitions.";
+
+BO_ 256 VEHICLE_DYNAMICS: 8 EngineECU
+ SG_ VehicleSpeed : 0|16@1+ (0.01,0) [0|250] "km/h" HeadUnit
+ SG_ GearSelection : 16|4@1+ (1,0) [0|15] "" HeadUnit
+ SG_ ParkingBrake : 20|1@1+ (1,0) [0|1] "" HeadUnit
+ SG_ IgnitionState : 24|4@1+ (1,0) [0|15] "" HeadUnit
+
+BO_ 512 BODY_STATUS: 8 BodyECU
+ SG_ DoorPos : 0|8@1+ (1,0) [0|255] "" HeadUnit
+ SG_ TurnSignal : 8|4@1+ (1,0) [0|15] "" HeadUnit
+
+BO_ 768 HVAC_STATUS: 8 ClimateECU
+ SG_ HvacTempSet : 0|8@1+ (0.5,10) [16|30] "degC" HeadUnit
 
 BO_ 1000 THERMAL_STATUS: 8 ClimateECU
  SG_ OutsideTemp : 0|16@1+ (0.1,-40) [-40|125] "degC" HeadUnit
@@ -21,11 +34,6 @@ BO_ 1001 BATTERY_THERMAL: 8 BMS
  SG_ CoolantInletTemp : 16|8@1+ (1,-40) [-40|125] "degC" HeadUnit
  SG_ BatteryThermalCounter : 60|4@1+ (1,0) [0|15] "" HeadUnit
 
-CM_ SG_ 1000 OutsideTemp "Ambient temperature from the front bumper NTC.";
-CM_ SG_ 1000 EvaporatorTemp "Big-endian (Motorola) signed example.";
-CM_ SG_ 1000 ThermalCounter "Rolling counter, increments every frame.";
-CM_ SG_ 1001 CellTempMax "Hottest cell in the HV battery pack. Worked example in docs/vhal/adding-a-new-signal.md.";
-
 BA_DEF_ SG_ "VhalProperty" STRING ;
 BA_DEF_ SG_ "VhalAreaId" INT 0 2147483647;
 BA_DEF_ SG_ "VhalChangeMode" ENUM "ON_CHANGE","CONTINUOUS";
@@ -36,6 +44,20 @@ BA_DEF_DEF_ "VhalAreaId" 0;
 BA_DEF_DEF_ "VhalChangeMode" "ON_CHANGE";
 BA_DEF_DEF_ "VhalMinSampleRate" 1;
 BA_DEF_DEF_ "VhalMaxSampleRate" 10;
+
+BA_ "VhalProperty" SG_ 256 VehicleSpeed "PERF_VEHICLE_SPEED";
+BA_ "VhalChangeMode" SG_ 256 VehicleSpeed "CONTINUOUS";
+BA_ "VhalMinSampleRate" SG_ 256 VehicleSpeed 1;
+BA_ "VhalMaxSampleRate" SG_ 256 VehicleSpeed 10;
+
+BA_ "VhalProperty" SG_ 256 GearSelection "GEAR_SELECTION";
+BA_ "VhalProperty" SG_ 256 ParkingBrake "PARKING_BRAKE_ON";
+BA_ "VhalProperty" SG_ 256 IgnitionState "IGNITION_STATE";
+
+BA_ "VhalProperty" SG_ 512 DoorPos "DOOR_POS";
+BA_ "VhalProperty" SG_ 512 TurnSignal "TURN_SIGNAL_STATE";
+
+BA_ "VhalProperty" SG_ 768 HvacTempSet "HVAC_TEMPERATURE_SET";
 
 BA_ "VhalProperty" SG_ 1000 OutsideTemp "ENV_OUTSIDE_TEMPERATURE";
 BA_ "VhalChangeMode" SG_ 1000 OutsideTemp "CONTINUOUS";

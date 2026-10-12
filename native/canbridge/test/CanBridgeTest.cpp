@@ -29,6 +29,13 @@ namespace {
 
 using namespace std::chrono_literals;
 
+constexpr int32_t kPerfVehicleSpeed = 0x11600207;
+constexpr int32_t kGearSelection = 0x11400400;
+constexpr int32_t kParkingBrakeOn = 0x11200402;
+constexpr int32_t kIgnitionState = 0x11400409;
+constexpr int32_t kDoorPos = 0x16400b00;
+constexpr int32_t kTurnSignalState = 0x11400408;
+constexpr int32_t kHvacTemperatureSet = 0x12400505;
 constexpr int32_t kEnvOutsideTemperature = 0x11600703;
 constexpr int32_t kHvacTemperatureCurrent = 0x15600502;
 constexpr int64_t kMs = 1000000;
@@ -59,6 +66,58 @@ TEST(SignalRouterTest, RoutesGeneratedBindings) {
     EXPECT_EQ(updates[2].areaId, 68);
     EXPECT_NEAR(updates[2].value, 24.0, 1e-9);
     EXPECT_TRUE(updates[0].available);
+}
+
+TEST(SignalRouterTest, RoutesAllSevenMandatoryVehicleSignals) {
+    SignalRouter router(allBindings(), 1000 * kMs);
+
+    // Frame 1: Vehicle Dynamics (CAN ID 0x100)
+    // Speed: 12050 -> 120.50 km/h (0x2F12 -> low: 0x12, high: 0x2F)
+    // Gear: 8 (Drive) -> byte 2 bits 0..3
+    // ParkingBrake: 1 (Engaged) -> byte 2 bit 4 -> 0x18 (0x08 | 0x10)
+    // Ignition: 2 (ON) -> byte 3 bits 0..3 -> 0x02
+    CanFrame f1;
+    f1.id = 0x100;
+    f1.dlc = 8;
+    f1.data = {0x12, 0x2F, 0x18, 0x02, 0, 0, 0, 0};
+
+    auto updates1 = router.onFrame(f1, 100 * kMs);
+    ASSERT_EQ(updates1.size(), 4u);
+    EXPECT_EQ(updates1[0].propId, kPerfVehicleSpeed);
+    EXPECT_NEAR(updates1[0].value, 120.50, 1e-5);
+    EXPECT_EQ(updates1[1].propId, kGearSelection);
+    EXPECT_DOUBLE_EQ(updates1[1].value, 8.0);
+    EXPECT_EQ(updates1[2].propId, kParkingBrakeOn);
+    EXPECT_DOUBLE_EQ(updates1[2].value, 1.0);
+    EXPECT_EQ(updates1[3].propId, kIgnitionState);
+    EXPECT_DOUBLE_EQ(updates1[3].value, 2.0);
+
+    // Frame 2: Body Status (CAN ID 0x200)
+    // DoorPos: 1 (Driver Open) -> byte 0 = 0x01
+    // TurnSignal: 2 (Left) -> byte 1 = 0x02
+    CanFrame f2;
+    f2.id = 0x200;
+    f2.dlc = 8;
+    f2.data = {0x01, 0x02, 0, 0, 0, 0, 0, 0};
+
+    auto updates2 = router.onFrame(f2, 110 * kMs);
+    ASSERT_EQ(updates2.size(), 2u);
+    EXPECT_EQ(updates2[0].propId, kDoorPos);
+    EXPECT_DOUBLE_EQ(updates2[0].value, 1.0);
+    EXPECT_EQ(updates2[1].propId, kTurnSignalState);
+    EXPECT_DOUBLE_EQ(updates2[1].value, 2.0);
+
+    // Frame 3: HVAC Status (CAN ID 0x300)
+    // HvacTempSet: raw 24 -> (24 * 0.5) + 10 = 22.0 °C -> byte 0 = 24 (0x18)
+    CanFrame f3;
+    f3.id = 0x300;
+    f3.dlc = 8;
+    f3.data = {0x18, 0, 0, 0, 0, 0, 0, 0};
+
+    auto updates3 = router.onFrame(f3, 120 * kMs);
+    ASSERT_EQ(updates3.size(), 1u);
+    EXPECT_EQ(updates3[0].propId, kHvacTemperatureSet);
+    EXPECT_NEAR(updates3[0].value, 22.0, 1e-5);
 }
 
 TEST(SignalRouterTest, RoutesBatteryCellTempToVendorProperty) {
