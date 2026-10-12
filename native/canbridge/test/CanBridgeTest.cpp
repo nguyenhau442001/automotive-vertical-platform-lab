@@ -72,10 +72,6 @@ TEST(SignalRouterTest, RoutesAllSevenMandatoryVehicleSignals) {
     SignalRouter router(allBindings(), 1000 * kMs);
 
     // Frame 1: Vehicle Dynamics (CAN ID 0x100)
-    // Speed: 12050 -> 120.50 km/h (0x2F12 -> low: 0x12, high: 0x2F)
-    // Gear: 8 (Drive) -> byte 2 bits 0..3
-    // ParkingBrake: 1 (Engaged) -> byte 2 bit 4 -> 0x18 (0x08 | 0x10)
-    // Ignition: 2 (ON) -> byte 3 bits 0..3 -> 0x02
     CanFrame f1;
     f1.id = 0x100;
     f1.dlc = 8;
@@ -93,8 +89,6 @@ TEST(SignalRouterTest, RoutesAllSevenMandatoryVehicleSignals) {
     EXPECT_DOUBLE_EQ(updates1[3].value, 2.0);
 
     // Frame 2: Body Status (CAN ID 0x200)
-    // DoorPos: 1 (Driver Open) -> byte 0 = 0x01
-    // TurnSignal: 2 (Left) -> byte 1 = 0x02
     CanFrame f2;
     f2.id = 0x200;
     f2.dlc = 8;
@@ -108,7 +102,6 @@ TEST(SignalRouterTest, RoutesAllSevenMandatoryVehicleSignals) {
     EXPECT_DOUBLE_EQ(updates2[1].value, 2.0);
 
     // Frame 3: HVAC Status (CAN ID 0x300)
-    // HvacTempSet: raw 24 -> (24 * 0.5) + 10 = 22.0 °C -> byte 0 = 24 (0x18)
     CanFrame f3;
     f3.id = 0x300;
     f3.dlc = 8;
@@ -176,6 +169,7 @@ TEST(SignalRouterTest, TimeoutMarksUnavailableOnceThenRecovers) {
 class FakeTransport : public ICanTransport {
   public:
     std::deque<CanFrame> frames;
+    std::vector<CanFrame> writtenFrames;
     int failOpens = 0;
     bool closeWhenEmpty = false;  // simulate the link dropping after the queue drains
     std::atomic<int> opens{0};
@@ -196,7 +190,10 @@ class FakeTransport : public ICanTransport {
         frames.pop_front();
         return ReadResult::kFrame;
     }
-    bool write(const CanFrame&) override { return true; }
+    bool write(const CanFrame& frame) override {
+        writtenFrames.push_back(frame);
+        return true;
+    }
     std::string describe() const override { return "fake"; }
 };
 
@@ -241,6 +238,25 @@ TEST(CanBridgeTest, RetriesOpenThenDeliversUpdates) {
     EXPECT_EQ(raw->opens.load(), 3);
     EXPECT_NEAR(collector.updates()[0].value, 23.3, 1e-9);
     EXPECT_EQ(bridge.stats().framesRouted, 1u);
+}
+
+TEST(CanBridgeTest, WritePropertyEncodesAndTransmitsCanFrame) {
+    auto transport = std::make_unique<FakeTransport>();
+    FakeTransport* raw = transport.get();
+
+    Collector collector;
+    CanBridge bridge(std::move(transport), allBindings(),
+                     [&](const auto& u) { collector(u); });
+
+    // Request target temperature 22.0 °C for HVAC_TEMPERATURE_SET (0x12400505)
+    // (22.0 - 10.0) / 0.5 = 24 (0x18)
+    bool success = bridge.writeProperty(kHvacTemperatureSet, 0, 22.0);
+    EXPECT_TRUE(success);
+
+    ASSERT_EQ(raw->writtenFrames.size(), 1u);
+    EXPECT_EQ(raw->writtenFrames[0].id, 0x300u);
+    EXPECT_EQ(raw->writtenFrames[0].dlc, 8u);
+    EXPECT_EQ(raw->writtenFrames[0].data[0], 0x18);
 }
 
 TEST(CanBridgeTest, ReportsUnavailableWhenEcuGoesSilent) {

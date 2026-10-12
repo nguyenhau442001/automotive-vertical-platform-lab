@@ -74,6 +74,30 @@ void CanBridge::injectFrame(const CanFrame& frame) {
     route(&frame);
 }
 
+bool CanBridge::writeProperty(int32_t propId, int32_t areaId, double physicalValue) {
+    std::lock_guard<std::mutex> lock(mRouterLock);
+    for (const auto& binding : mRouter.bindings()) {
+        if (binding.propId == propId && binding.areaId == areaId) {
+            if (binding.signal == nullptr) continue;
+
+            auto rawOpt = physicalToRaw(*binding.signal, physicalValue);
+            if (!rawOpt.has_value()) return false;
+
+            CanFrame frame;
+            frame.id = binding.canId;
+            frame.dlc = binding.dlc;
+            frame.data.fill(0);
+
+            if (!insertRaw(*binding.signal, *rawOpt, frame.data.data(), frame.dlc)) {
+                return false;
+            }
+
+            return mTransport && mTransport->write(frame);
+        }
+    }
+    return false;
+}
+
 void CanBridge::route(const CanFrame* frame) {
     std::vector<PropertyUpdate> updates;
     {

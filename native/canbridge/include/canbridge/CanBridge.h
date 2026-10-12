@@ -56,6 +56,9 @@ class CanBridge {
     // Route a frame as if it came from the transport (dumpsys/debug hook).
     void injectFrame(const CanFrame& frame);
 
+    // TX path: encodes physical value into a CAN frame and transmits on transport.
+    bool writeProperty(int32_t propId, int32_t areaId, double physicalValue);
+
     bool connected() const { return mConnected; }
     SignalRouter::Stats stats() const;
 
