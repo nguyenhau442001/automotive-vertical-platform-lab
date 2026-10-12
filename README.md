@@ -122,8 +122,10 @@ Build the Android Automotive application:
   - Full DBC signal database mapping for all 7 required vehicle signals.
   - Auto-generated C++ `BlueprintSignals.h` with `SignalBinding` definitions.
   - Native GoogleTest coverage for multi-signal unpacking, `CONTINUOUS` & `ON_CHANGE` semantics.
-- [ ] **Phase 3: AIDL/Binder Vehicle Property Service**
-  - Full AIDL HAL interface integration and native Binder daemon.
+- [x] **Phase 3: AIDL/Binder Vehicle Property Service** (Completed)
+  - Decorator architecture (`CanVehicleHardware`) bridging native `CanBridge` with AOSP `DefaultVehicleHal`.
+  - Type conversion utilities (`toVhalPropValue`) and property value rounding.
+  - TX write path (`writeProperty`) encoding set requests into CAN frames.
 - [ ] **Phase 4: Android Automotive HMI Dashboard**
   - Expanded Jetpack Compose / Custom Automotive UI dashboard with live signal telemetry gauges.
 - [ ] **Phase 5: JNI / OpenGL / Surface Rendering Demo**
