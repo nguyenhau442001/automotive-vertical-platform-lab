@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="cockpit_bg">#121418</color>
+    <color name="cockpit_card_bg">#1E222A</color>
+    <color name="cockpit_accent">#00E5FF</color>
+    <color name="cockpit_text_primary">#FFFFFF</color>
+    <color name="cockpit_text_secondary">#8E99A8</color>
+    <color name="cockpit_success">#00E676</color>
+    <color name="cockpit_warning">#FFD600</color>
+</resources>

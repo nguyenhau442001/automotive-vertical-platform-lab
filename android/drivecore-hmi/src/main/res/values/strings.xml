@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">DriveCore HMI</string>
+    <string name="app_subtitle">Vehicle Signal to Android HMI Demo</string>
+    <string name="title_dashboard">Automotive Cockpit Overview</string>
+    <string name="vhal_status_mock">Mock VHAL Adapter Connected</string>
+</resources>

@@ -2,4 +2,10 @@ __pycache__/
 .pytest_cache/
 *.pyc
 build/
+.gradle/
+.idea/
+local.properties
+native/build/
 native/build-android/
+android/*/build/
+*.iml

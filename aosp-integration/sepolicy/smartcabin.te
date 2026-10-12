@@ -1,0 +1,23 @@
+# SELinux Policy Blueprint for DriveCore HMI Native Daemon
+# Domain definition for vendor vehicle daemon (/vendor/bin/hw/smartcabin-service)
+
+type smartcabin, domain;
+type smartcabin_exec, exec_type, vendor_file_type, file_type;
+
+# Init domain transition
+init_daemon_domain(smartcabin)
+
+# Allow binder IPC calls
+binder_use(smartcabin)
+binder_call(smartcabin, system_server)
+binder_call(system_server, smartcabin)
+
+# Allow registering with ServiceManager / Hardware ServiceManager (hwservicemanager)
+hal_server_domain(smartcabin, hal_vehicle)
+
+# SocketCAN / Network access for CAN bus communication
+allow smartcabin self:netlink_route_socket { create bind read write };
+allow smartcabin self:can_socket { create bind read write ioctl };
+
+# Logging permissions
+unix_socket_connect(smartcabin, logdr, logd)

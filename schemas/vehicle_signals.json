@@ -1,0 +1,182 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VehicleSignalDatabase",
+  "description": "Source of truth schema for vehicle signals in DriveCore HMI lab, mapping physical CAN frames to Android Automotive VHAL properties.",
+  "version": "1.0.0",
+  "signals": [
+    {
+      "signal_id": "VEHICLE_SPEED",
+      "name": "Vehicle Speed",
+      "vhal_property_id": "0x11600207",
+      "vhal_property_id_decimal": 291504647,
+      "vhal_property_name": "PERF_VEHICLE_SPEED",
+      "data_type": "FLOAT",
+      "unit": "km/h",
+      "change_mode": "CONTINUOUS",
+      "access_mode": "READ",
+      "min_value": 0.0,
+      "max_value": 250.0,
+      "sample_rate_hz": 10,
+      "can_mapping": {
+        "can_id": "0x100",
+        "start_bit": 0,
+        "bit_length": 16,
+        "factor": 0.01,
+        "offset": 0.0,
+        "endianness": "LITTLE_ENDIAN"
+      },
+      "description": "Current vehicle speed in kilometers per hour. Delivered continuously from engine ECU."
+    },
+    {
+      "signal_id": "GEAR_SELECTION",
+      "name": "Gear Selection",
+      "vhal_property_id": "0x11400400",
+      "vhal_property_id_decimal": 289408000,
+      "vhal_property_name": "GEAR_SELECTION",
+      "data_type": "ENUM",
+      "unit": "enum",
+      "change_mode": "ON_CHANGE",
+      "access_mode": "READ",
+      "allowed_values": [
+        {"value": 1, "label": "PARK"},
+        {"value": 2, "label": "REVERSE"},
+        {"value": 4, "label": "NEUTRAL"},
+        {"value": 8, "label": "DRIVE"}
+      ],
+      "can_mapping": {
+        "can_id": "0x100",
+        "start_bit": 16,
+        "bit_length": 4,
+        "factor": 1.0,
+        "offset": 0.0,
+        "endianness": "LITTLE_ENDIAN"
+      },
+      "description": "Automatic transmission gear position (Park, Reverse, Neutral, Drive)."
+    },
+    {
+      "signal_id": "PARKING_BRAKE",
+      "name": "Parking Brake State",
+      "vhal_property_id": "0x11200402",
+      "vhal_property_id_decimal": 287310850,
+      "vhal_property_name": "PARKING_BRAKE_ON",
+      "data_type": "BOOLEAN",
+      "unit": "boolean",
+      "change_mode": "ON_CHANGE",
+      "access_mode": "READ",
+      "allowed_values": [
+        {"value": 0, "label": "RELEASED"},
+        {"value": 1, "label": "ENGAGED"}
+      ],
+      "can_mapping": {
+        "can_id": "0x100",
+        "start_bit": 20,
+        "bit_length": 1,
+        "factor": 1.0,
+        "offset": 0.0,
+        "endianness": "LITTLE_ENDIAN"
+      },
+      "description": "Electronic parking brake engagement status."
+    },
+    {
+      "signal_id": "DOOR_STATE",
+      "name": "Door Position / Lock State",
+      "vhal_property_id": "0x16400b00",
+      "vhal_property_id_decimal": 373295872,
+      "vhal_property_name": "DOOR_POS",
+      "data_type": "INT32",
+      "unit": "bitmask",
+      "change_mode": "ON_CHANGE",
+      "access_mode": "READ",
+      "allowed_values": [
+        {"value": 0, "label": "ALL_CLOSED"},
+        {"value": 1, "label": "DRIVER_OPEN"},
+        {"value": 2, "label": "PASSENGER_OPEN"},
+        {"value": 4, "label": "REAR_LEFT_OPEN"},
+        {"value": 8, "label": "REAR_RIGHT_OPEN"}
+      ],
+      "can_mapping": {
+        "can_id": "0x200",
+        "start_bit": 0,
+        "bit_length": 8,
+        "factor": 1.0,
+        "offset": 0.0,
+        "endianness": "LITTLE_ENDIAN"
+      },
+      "description": "Vehicle door open/closed status encoded as a bitmask across vehicle body zones."
+    },
+    {
+      "signal_id": "HVAC_TEMPERATURE",
+      "name": "HVAC Temperature Setpoint",
+      "vhal_property_id": "0x12400505",
+      "vhal_property_id_decimal": 306185477,
+      "vhal_property_name": "HVAC_TEMPERATURE_SET",
+      "data_type": "FLOAT",
+      "unit": "celsius",
+      "change_mode": "ON_CHANGE",
+      "access_mode": "READ_WRITE",
+      "min_value": 16.0,
+      "max_value": 30.0,
+      "can_mapping": {
+        "can_id": "0x300",
+        "start_bit": 0,
+        "bit_length": 8,
+        "factor": 0.5,
+        "offset": 10.0,
+        "endianness": "LITTLE_ENDIAN"
+      },
+      "description": "Cabin climate control target temperature setting in Celsius."
+    },
+    {
+      "signal_id": "TURN_SIGNAL",
+      "name": "Turn Signal State",
+      "vhal_property_id": "0x11400408",
+      "vhal_property_id_decimal": 289408008,
+      "vhal_property_name": "TURN_SIGNAL_STATE",
+      "data_type": "ENUM",
+      "unit": "enum",
+      "change_mode": "ON_CHANGE",
+      "access_mode": "READ",
+      "allowed_values": [
+        {"value": 0, "label": "NONE"},
+        {"value": 1, "label": "RIGHT"},
+        {"value": 2, "label": "LEFT"},
+        {"value": 3, "label": "HAZARD"}
+      ],
+      "can_mapping": {
+        "can_id": "0x200",
+        "start_bit": 8,
+        "bit_length": 4,
+        "factor": 1.0,
+        "offset": 0.0,
+        "endianness": "LITTLE_ENDIAN"
+      },
+      "description": "Turn indicator status (None, Left, Right, or Hazard warning)."
+    },
+    {
+      "signal_id": "IGNITION_STATE",
+      "name": "Ignition / Power State",
+      "vhal_property_id": "0x11400409",
+      "vhal_property_id_decimal": 289408009,
+      "vhal_property_name": "IGNITION_STATE",
+      "data_type": "ENUM",
+      "unit": "enum",
+      "change_mode": "ON_CHANGE",
+      "access_mode": "READ",
+      "allowed_values": [
+        {"value": 0, "label": "OFF"},
+        {"value": 1, "label": "ACC"},
+        {"value": 2, "label": "ON"},
+        {"value": 3, "label": "START"}
+      ],
+      "can_mapping": {
+        "can_id": "0x100",
+        "start_bit": 24,
+        "bit_length": 4,
+        "factor": 1.0,
+        "offset": 0.0,
+        "endianness": "LITTLE_ENDIAN"
+      },
+      "description": "Vehicle ignition switch position / power state."
+    }
+  ]
+}

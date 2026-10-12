@@ -1,124 +1,145 @@
-# AOSP Vertical Architecture Blueprint
+# 🏎️ DriveCore HMI: Android Automotive Vertical Architecture Lab
 
-A architectural blueprint and fast-iteration guide for vertical slice development on **Android Open Source Project (AOSP)** and **Android Automotive OS (AAOS)** — optimized for a hybrid development workflow between **macOS (Apple Silicon host)** and **Linux (UTM virtual machine)**.
+> **A hands-on Android Automotive vertical architecture lab, from vehicle signal to Android HMI.**
 
 ---
 
-## 🏗️ Vertical Slice Architecture Overview (Smart Cabin Example)
+## 🎯 Overview
 
-Vertical development cuts across all layers from the hardware abstraction layer (HAL) up to the user-facing application:
+**DriveCore HMI** is a portfolio-grade, end-to-end Android Automotive OS (AAOS) platform engineering lab. Inspired by real-world automotive job requirements (Tier-1 suppliers and OEMs), this project demonstrates how vehicle bus signals travel across every system layer: from electrical CAN frames to native C++ daemons, AIDL/Binder interfaces, AOSP `CarService`, and user-facing HMI applications.
 
 ```mermaid
 flowchart TD
-    App["📱 Android App / System UI"] --> Manager["📦 Client Library / Manager (CabinManager.jar)"]
-    Manager --> BinderIPC["⚡ Binder IPC"]
-    BinderIPC --> SysService["⚙️ System Service (Framework / SystemServer)"]
-    SysService --> HALAIDL["🔌 AIDL HAL Interface (android.hardware.smartcabin)"]
-    HALAIDL --> NativeDaemon["🛠️ C++ Native Daemon (/vendor/bin/hw/smartcabin-service)"]
-    NativeDaemon --> Driver["🚗 Kernel / VHAL / CAN Bus Simulator"]
+    subgraph L1["Layer 1: Vehicle Bus / Simulator"]
+        CAN["🚗 CAN Bus / ECU Simulator\n(schemas/vehicle_signals.json & simulator/)"]
+    end
+
+    subgraph L2["Layer 2: Native C++ Core"]
+        Codec["🛠️ libcansignal Codec\n(Bit Unpacking & Scaling)"]
+        Bridge["⚙️ canbridge Daemon\n(/vendor/bin/hw/smartcabin-service)"]
+        CAN --> Codec --> Bridge
+    end
+
+    subgraph L3["Layer 3: Vehicle HAL (VHAL)"]
+        VHAL["🔌 Mock VHAL-like Adapter / AIDL Service\n(android.hardware.automotive.vehicle)"]
+        Bridge -->|Binder IPC| VHAL
+    end
+
+    subgraph L4["Layer 4: Android System Framework"]
+        CarService["⚙️ AAOS SystemServer / CarService\n(CarPropertyService)"]
+        VHAL -->|Binder IPC| CarService
+    end
+
+    subgraph L5["Layer 5: Android HMI Application"]
+        Cockpit["📱 DriveCore HMI App\n(com.automotivevertical.drivecore)"]
+        CarService -->|CarPropertyManager| Cockpit
+    end
 ```
 
 ---
 
-## 🔌 CAN -> VHAL Pipeline
+## 🛠️ Skills & Competencies Demonstrated
 
-From the voltage on CAN_H / CAN_L to `CarPropertyManager`, one tested layer at a time.
-Start with [docs/ROADMAP.md](docs/ROADMAP.md).
+| Skill Area | Key Technology | Architectural Concept |
+|------------|----------------|-----------------------|
+| **Android Automotive OS** | `CarPropertyManager`, AAOS 15 | Vehicle property subscriptions, change mode handling (`CONTINUOUS` vs `ON_CHANGE`). |
+| **AOSP Integration** | Vendor partition isolation, Treble | VINTF manifests, init `.rc` scripts, vendor HAL service registration. |
+| **Vehicle Protocols & CAN** | CAN 2.0B, DBC, `SocketCAN` | Bitframe unpacking, factor/offset physical scaling, endianness. |
+| **Native C++ Core** | C++17, GoogleTest, CMake | Native daemon loops, lock-free queues, socket abstractions. |
+| **Binder IPC & AIDL** | AIDL (`IVehicle.aidl`), Binder | Inter-process communication, asynchronous HAL callbacks, interface versioning. |
+| **Android HMI Application** | Kotlin, `StateFlow`, Coroutines | Reactive cockpit state mapping, clean architecture, mock property adapter. |
+| **Security & Hardening** | SELinux policies (`.te`) | Vendor domain separation, binder call rules, permission enforcement. |
+| **Cross-Layer Diagnostics** | `dumpsys car_service`, Python tracing | Latency measurement, event stream logging, cross-layer debugging. |
 
+---
+
+## 📂 Repository Index
+
+```
+.
+├── schemas/                # Single Source of Truth vehicle signal database (vehicle_signals.json)
+├── simulator/              # Python dynamic vehicle signal & CAN frame generator
+├── native/                 # C++ signal codecs, SocketCAN/TCP transport, & canbridge daemon
+├── android/                # Android Automotive HMI application
+│   └── drivecore-hmi/      # DriveCore HMI Android app (com.automotivevertical.drivecore)
+├── diagnostics/            # Signal tracers, latency inspectors, & debugging tools
+├── aosp-integration/       # SELinux sepolicy, Android.bp, init .rc blueprints, & VINTF manifests
+├── docs/                   # Architectural guides, signal pipeline specs, & interview deep dive
+└── tests/                  # Multi-layer contract and schema verification tests
+```
+
+---
+
+## 🚦 Source of Truth Signals (`schemas/vehicle_signals.json`)
+
+The lab standardizes 7 required vehicle signals mapped directly to AOSP `VehicleProperty` specifications:
+
+| Signal ID | VHAL Property Name | Data Type | Change Mode | Access | Unit |
+|-----------|-------------------|-----------|-------------|--------|------|
+| `VEHICLE_SPEED` | `PERF_VEHICLE_SPEED` | `FLOAT` | `CONTINUOUS` | READ | km/h |
+| `GEAR_SELECTION` | `GEAR_SELECTION` | `ENUM` | `ON_CHANGE` | READ | enum |
+| `PARKING_BRAKE` | `PARKING_BRAKE_ON` | `BOOLEAN` | `ON_CHANGE` | READ | boolean |
+| `DOOR_STATE` | `DOOR_POS` | `INT32` | `ON_CHANGE` | READ | bitmask |
+| `HVAC_TEMPERATURE` | `HVAC_TEMPERATURE_SET` | `FLOAT` | `ON_CHANGE` | READ_WRITE | °C |
+| `TURN_SIGNAL` | `TURN_SIGNAL_STATE` | `ENUM` | `ON_CHANGE` | READ | enum |
+| `IGNITION_STATE` | `IGNITION_STATE` | `ENUM` | `ON_CHANGE` | READ | enum |
+
+---
+
+## 🚀 Quickstart Guide
+
+### 1. Run Schema Contract Tests
+Validate schema completeness and property constants:
 ```bash
-make test                                   # Python simulator + C++ host tests
-cd tools/cansim && python3 -m cansim wave 3E8#7902          # see a frame as CAN_H / CAN_L
-python3 -m cansim serve THERMAL_STATUS --ramp OutsideTemp:-10:40:20   # fake ECU
-native/build/bp-canbridge tcp:127.0.0.1:29536                # what VHAL receives
+python3 -m unittest tests/contract/test_signal_schema.py
 ```
 
-| Path | What |
-|------|------|
-| [vehicle/dbc/blueprint.dbc](vehicle/dbc/blueprint.dbc) | Signal database, source of truth |
-| [tools/cansim/](tools/cansim/) | CAN simulator: bits, CAN_H/CAN_L, DBC codec, TCP/vcan streaming, codegen |
-| [native/](native/) | C++ signal codec, transports (SocketCAN/TCP), CAN bridge |
-| [vhal/aosp/](vhal/aosp/) | `CanVehicleHardware` + VHAL AIDL service |
-| [docs/vhal/adding-a-new-signal.md](docs/vhal/adding-a-new-signal.md) | Checklist for every new signal |
-
----
-
-## 🚀 Fast Iteration Development Workflow
-
-### ⚡ Quick Start (One Command)
-Launch Android 15 Automotive and automatically unlock write permissions on `/system` and `/vendor`:
+### 2. Launch Dynamic Vehicle Signal Generator
+Stream dynamic synthetic vehicle signal state:
 ```bash
-make run
-# or: ./scripts/run.sh
+python3 simulator/signal_generator.py 10.0
 ```
 
----
-
-### Step-by-Step Breakdown
-
-#### 1. ROM Selection & Setup
-* **Target:** Android 15 Automotive `arm64-v8a` (`system-images;android-35-ext15;android-automotive;arm64-v8a`).
-* **Type:** Google APIs (`userdebug`). Avoid Google Play images as they block root and partition remounting.
-* **AVD:** `Automotive_15_ARM64` (preconfigured with GPU acceleration and landscape orientation).
-
-#### 2. Partition Unlock (Root, dm-verity, remount)
-To allow pushing files into `/system` and `/vendor`:
+### 3. Build & Run Native C++ Core Tests
+Compile and execute native GoogleTest suites:
 ```bash
-# Handled automatically by `make run`, or manually via:
-adb wait-for-device && adb root && adb disable-verity && adb reboot
-adb wait-for-device && adb root && adb remount
+cd native && mkdir -p build && cd build
+cmake .. && make && ctest --output-on-failure
 ```
 
----
-
-### 3. Build Modules Locally (On Linux / UTM VM)
-In the Ubuntu (UTM) environment, avoid running a full system `m` build (which takes hours). Build only the target modules you created or modified:
-
-* **Build C++ HAL Daemon:**
-  ```bash
-  m android.hardware.smartcabin-service
-  ```
-* **Build Java Manager Library:**
-  ```bash
-  m CabinManager
-  ```
-* **Retrieve Output Artifacts:** Collect the generated binaries or `.jar` files from:
-  ```bash
-  out/target/product/<target_device>/vendor/bin/hw/
-  out/target/product/<target_device>/system/framework/
-  ```
-  and synchronize/copy them over to the host machine (macOS).
-
----
-
-### 4. Deploy Artifacts to Emulator (On macOS Host)
-Push the executable binaries and service configuration files directly into the emulator via ADB:
-
+### 4. Build Android HMI (`DriveCore HMI`)
+Build the Android Automotive application:
 ```bash
-adb push smartcabin-service /vendor/bin/hw/
-adb push smartcabin.rc /vendor/etc/init/
-adb push smartcabin-manifest.xml /vendor/etc/vintf/manifest/
+./gradlew :android:drivecore-hmi:assembleDebug
 ```
 
 ---
 
-### 5. Bypass SELinux & Start the Service
-When files are pushed externally via ADB, SELinux security contexts are often missing or mislabeled, causing Android's init to block execution.
+## 🗺️ Project Roadmap & Development Phases
 
-1. **Set SELinux to Permissive mode (for prototyping / development):**
-   ```bash
-   adb shell setenforce 0
-   ```
+- [x] **Phase 1: Signal Schema, Simulator, & Architecture Docs** (Completed MVP)
+  - Source of truth `schemas/vehicle_signals.json` covering 7 key signals.
+  - Python dynamic simulator engine & diagnostic tracer.
+  - Initial `DriveCore HMI` Android application structure and mock VHAL-like adapter.
+  - Comprehensive architectural and interview deep-dive documentation.
+- [ ] **Phase 2: Native C++ Signal Core**
+  - Enhanced C++ signal router, DBC bit unpacker, and SocketCAN/TCP transport.
+- [ ] **Phase 3: AIDL/Binder Vehicle Property Service**
+  - Full AIDL HAL interface integration and native Binder daemon.
+- [ ] **Phase 4: Android Automotive HMI Dashboard**
+  - Expanded Jetpack Compose / Custom Automotive UI dashboard with live signal telemetry gauges.
+- [ ] **Phase 5: JNI / OpenGL / Surface Rendering Demo**
+  - Low-latency native cluster rendering pipeline using ANativeWindow / OpenGL ES.
+- [ ] **Phase 6: Audio Focus & Ducking Simulator**
+  - Automotive audio zone routing and safety audio ducking manager.
+- [ ] **Phase 7: SELinux & AOSP Integration Notes**
+  - Full enforcing-mode SELinux policies, AVD integration, and partition deployment.
+- [ ] **Phase 8: Diagnostics, Replay, Contract Tests, & CI**
+  - CAN log replay harness, automated contract tests, and GitHub Actions CI.
 
-2. **Restart SystemServer to register new framework services (no need to reboot the entire emulator):**
-   ```bash
-   adb shell stop && adb shell start
-   ```
+---
 
-3. **Verify service status:**
-   ```bash
-   # Check if native HAL daemon is running
-   adb shell ps -A | grep smartcabin
+## ⚠️ Disclaimers & Terminology
 
-   # Inspect logcat output
-   adb shell logcat -s SmartCabin
-   ```
+- **Terminology**: This repository uses **"mock VHAL-like adapter"** terminology to represent hardware abstraction layers cleanly for educational and demonstration purposes.
+- **Independence**: This project is an independent educational lab. It does **not** contain proprietary code, confidential specifications, or data from any commercial vehicle manufacturer or OEM.
