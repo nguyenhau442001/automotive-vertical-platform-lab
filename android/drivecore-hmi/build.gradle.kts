@@ -5,7 +5,9 @@ plugins {
 
 android {
     namespace = "com.automotivevertical.drivecore"
-    compileSdk = 35
+    compileSdk {
+        version = release(37)
+    }
 
     defaultConfig {
         applicationId = "com.automotivevertical.drivecore"
@@ -42,7 +44,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
 
-    // Jetpack Compose
+    // Jetpack Compose (2026 Stable Release)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.ui)
