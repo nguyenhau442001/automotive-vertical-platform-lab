@@ -1,6 +1,15 @@
 <resources>
     <string name="app_name">DriveCore HMI</string>
     <string name="app_subtitle">Vehicle Signal to Android HMI Demo</string>
-    <string name="title_dashboard">Automotive Cockpit Overview</string>
-    <string name="vhal_status_mock">Mock VHAL Adapter Connected</string>
+    <string name="title_dashboard">Automotive Cockpit Dashboard</string>
+    <string name="vhal_status_connected">Mock VHAL Adapter Connected</string>
+
+    <!-- Signal Card Titles -->
+    <string name="card_speed">Speedometer</string>
+    <string name="card_gear">Gear Position</string>
+    <string name="card_parking_brake">Parking Brake</string>
+    <string name="card_door">Door Position</string>
+    <string name="card_hvac">Climate Control</string>
+    <string name="card_turn_signal">Turn Indicator</string>
+    <string name="card_ignition">Power State</string>
 </resources>
