@@ -55,6 +55,7 @@ blueprint_add_test(cantransport_test)
 add_library(canbridge STATIC
     canbridge/src/CanBridge.cpp
     canbridge/src/SignalRouter.cpp
+    canbridge/src/VhalPropertyUtils.cpp
 )
 target_include_directories(canbridge PUBLIC canbridge/include canbridge)
 target_link_libraries(canbridge PUBLIC cansignal cantransport)
@@ -67,3 +68,7 @@ target_link_libraries(bp-canbridge canbridge)
 add_executable(canbridge_test canbridge/test/CanBridgeTest.cpp)
 target_link_libraries(canbridge_test canbridge GTest::gtest_main)
 blueprint_add_test(canbridge_test)
+
+add_executable(vhal_property_utils_test canbridge/test/VhalPropertyUtilsTest.cpp)
+target_link_libraries(vhal_property_utils_test canbridge GTest::gtest_main)
+blueprint_add_test(vhal_property_utils_test)

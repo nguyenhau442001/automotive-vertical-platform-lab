@@ -9,6 +9,7 @@ cc_library_static {
     srcs: [
         "src/CanBridge.cpp",
         "src/SignalRouter.cpp",
+        "src/VhalPropertyUtils.cpp",
     ],
     // "." exposes generated/BlueprintSignals.h (produced by `make codegen`).
     export_include_dirs: [
@@ -37,7 +38,10 @@ cc_test {
     name: "libblueprint_canbridge_test",
     host_supported: true,
     vendor: true,
-    srcs: ["test/CanBridgeTest.cpp"],
+    srcs: [
+        "test/CanBridgeTest.cpp",
+        "test/VhalPropertyUtilsTest.cpp",
+    ],
     static_libs: ["libblueprint_canbridge"],
     test_suites: ["general-tests"],
 }
